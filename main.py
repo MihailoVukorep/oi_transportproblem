@@ -81,34 +81,37 @@ def find_entering_variable(solution, costs, u, v):
     return enter_i, enter_j
 
 def find_cycle(solution, start):
+    """
+    Pronalazi ciklus koji uključuje poziciju `start` koristeći iterativni pristup (BFS).
+    """
     rows, cols = solution.shape
-    path = []
+    queue = [(start, [start])]
     visited = set()
-    def dfs(x, y, direction):
-        if (x, y) == start and len(path) >= 4:
-            return path
-        if (x, y) in visited:
-            return None
+
+    while queue:
+        (current, path) = queue.pop(0)
+        x, y = current
         visited.add((x, y))
-        path.append((x, y))
+
+        # Definišemo susede (pravolinijske pomake)
         neighbors = []
-        if direction != "down" and x > 0:
-            neighbors.append((x-1, y, "up"))
-        if direction != "up" and x < rows-1:
-            neighbors.append((x+1, y, "down"))
-        if direction != "right" and y > 0:
-            neighbors.append((x, y-1, "left"))
-        if direction != "left" and y < cols-1:
-            neighbors.append((x, y+1, "right"))
-        for nx, ny, ndir in neighbors:
-            if solution[nx][ny] > 0 or (nx, ny) == start:
-                result = dfs(nx, ny, ndir)
-                if result:
-                    return result
-        path.pop()
-        visited.remove((x, y))
-        return None
-    return dfs(start[0], start[1], None)
+        for i in range(rows):
+            if solution[i][y] > 0 or (i, y) == start:
+                neighbors.append((i, y))
+        for j in range(cols):
+            if solution[x][j] > 0 or (x, j) == start:
+                neighbors.append((x, j))
+
+        # Prolazimo kroz susede
+        for neighbor in neighbors:
+            if neighbor in visited:
+                continue
+            if neighbor == start and len(path) >= 4:
+                return path + [start]  # Pronađen ciklus
+            elif neighbor not in path:
+                queue.append((neighbor, path + [neighbor]))
+
+    return None
 
 def adjust_solution(solution, cycle, entering_value):
     min_val = min(solution[x][y] for x, y in cycle[1::2])
