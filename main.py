@@ -122,14 +122,35 @@ def adjust_solution(solution, cycle, entering_value):
             solution[x][y] -= min_val
     solution[cycle[0][0]][cycle[0][1]] = entering_value
 
+option_add = True
+
 def transportation_algorithm(supply, demand, costs):
     """
     Glavna funkcija koja rešava transportni problem koristeći MODI metodu.
     """
+
+    # Provera da li je problem balansiran
+    if sum(supply) != sum(demand):
+        raise ValueError("Problem nije balansiran! Ukupna ponuda mora biti jednaka ukupnoj potražnji.")
+
+    # Provera dimenzija troškova
+    if costs.shape != (len(supply), len(demand)):
+        raise ValueError("Dimenzije matrice troškova nisu u skladu sa brojem dobavljača i potrošača.")
+
+    # Provera nenegativnosti ponude i potražnje
+    if any(x < 0 for x in supply) or any(x < 0 for x in demand):
+        raise ValueError("Ponuda i potražnja moraju biti nenegativne vrednosti.")
+
     solution = north_west_corner(supply, demand)
     solution = check_degeneracy(solution, supply, demand)
 
+    max_iterations = 1000
+    iterations = 0
+
     while True:
+        if iterations >= max_iterations:
+            raise RuntimeError("Prekoračen maksimalni broj iteracija; algoritam možda ne konvergira.")
+
         u, v = calculate_u_v(solution, costs)
         enter_i, enter_j = find_entering_variable(solution, costs, u, v)
 
@@ -138,11 +159,20 @@ def transportation_algorithm(supply, demand, costs):
 
         # Implementacija petlje za izlazak promenljive (izmena ciklusa)
         # Nakon optimizacije petlje, ažuriraj rešenje sa novim vrednostima
+        # Pronađi ciklus za MODI metodu
         cycle = find_cycle(solution, (enter_i, enter_j))
-        if cycle is None:
-            print("Greška: Nije pronađen ciklus!")
-            break
+        if option_add:
+            if cycle is None:
+                print("Dodavanje degenerisanih promenljivih zbog manjka baznih promenljivih.")
+            solution = check_degeneracy(solution, supply, demand)
+            continue
+        else:
+            if cycle is None:
+                print("Greška: Nije pronađen ciklus!")
+                break
         adjust_solution(solution, cycle, entering_value=1e-5)
+
+        iterations += 1
 
     return solution
 
