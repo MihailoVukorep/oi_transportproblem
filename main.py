@@ -148,6 +148,8 @@ def transportation_algorithm(supply, demand, costs):
     iterations = 0
 
     while True:
+        iterations += 1
+        print(f"iter: {iterations}")
         if iterations >= max_iterations:
             raise RuntimeError("Prekoračen maksimalni broj iteracija; algoritam možda ne konvergira.")
 
@@ -164,15 +166,14 @@ def transportation_algorithm(supply, demand, costs):
         if option_add:
             if cycle is None:
                 print("Dodavanje degenerisanih promenljivih zbog manjka baznih promenljivih.")
-            solution = check_degeneracy(solution, supply, demand)
-            continue
+                solution = check_degeneracy(solution, supply, demand)
+                continue
         else:
             if cycle is None:
                 print("Greška: Nije pronađen ciklus!")
                 break
         adjust_solution(solution, cycle, entering_value=1e-5)
 
-        iterations += 1
 
     return solution
 
