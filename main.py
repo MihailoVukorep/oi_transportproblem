@@ -80,6 +80,45 @@ def find_entering_variable(solution, costs, u, v):
     enter_i, enter_j = np.unravel_index(np.argmin(delta), delta.shape)
     return enter_i, enter_j
 
+def find_cycle(solution, start):
+    rows, cols = solution.shape
+    path = []
+    visited = set()
+    def dfs(x, y, direction):
+        if (x, y) == start and len(path) >= 4:
+            return path
+        if (x, y) in visited:
+            return None
+        visited.add((x, y))
+        path.append((x, y))
+        neighbors = []
+        if direction != "down" and x > 0:
+            neighbors.append((x-1, y, "up"))
+        if direction != "up" and x < rows-1:
+            neighbors.append((x+1, y, "down"))
+        if direction != "right" and y > 0:
+            neighbors.append((x, y-1, "left"))
+        if direction != "left" and y < cols-1:
+            neighbors.append((x, y+1, "right"))
+        for nx, ny, ndir in neighbors:
+            if solution[nx][ny] > 0 or (nx, ny) == start:
+                result = dfs(nx, ny, ndir)
+                if result:
+                    return result
+        path.pop()
+        visited.remove((x, y))
+        return None
+    return dfs(start[0], start[1], None)
+
+def adjust_solution(solution, cycle, entering_value):
+    min_val = min(solution[x][y] for x, y in cycle[1::2])
+    for idx, (x, y) in enumerate(cycle):
+        if idx % 2 == 0:
+            solution[x][y] += min_val
+        else:
+            solution[x][y] -= min_val
+    solution[cycle[0][0]][cycle[0][1]] = entering_value
+
 def transportation_algorithm(supply, demand, costs):
     """
     Glavna funkcija koja rešava transportni problem koristeći MODI metodu.
@@ -94,9 +133,13 @@ def transportation_algorithm(supply, demand, costs):
         if enter_i is None:  # Ako je optimalno
             break
 
-        # TODO: Implementacija petlje za izlazak promenljive (izmena ciklusa)
-
+        # Implementacija petlje za izlazak promenljive (izmena ciklusa)
         # Nakon optimizacije petlje, ažuriraj rešenje sa novim vrednostima
+        cycle = find_cycle(solution, (enter_i, enter_j))
+        if cycle is None:
+            print("Greška: Nije pronađen ciklus!")
+            break
+        adjust_solution(solution, cycle, entering_value=1e-5)
 
     return solution
 
