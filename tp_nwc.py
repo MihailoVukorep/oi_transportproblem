@@ -1,6 +1,12 @@
 import numpy as np
 
 def transportation(costs, supply, demand):
+    if np.any(costs < 0) or np.any(supply < 0) or np.any(demand < 0):
+        raise ValueError("All values in costs, supply, and demand must be non-negative.")
+
+    if costs.shape != (len(supply), len(demand)):
+        raise ValueError("Dimensions of costs must match lengths of supply and demand.")
+
     num_suppliers = len(supply)
     num_customers = len(demand)
 

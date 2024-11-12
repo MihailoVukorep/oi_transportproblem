@@ -33,6 +33,12 @@ def find_column_penalties(costs, supply, demand):
     return penalties
 
 def vogel_method(costs, supply, demand):
+    if np.any(costs < 0) or np.any(supply < 0) or np.any(demand < 0):
+        raise ValueError("All values in costs, supply, and demand must be non-negative.")
+
+    if costs.shape != (len(supply), len(demand)):
+        raise ValueError("Dimensions of costs must match lengths of supply and demand.")
+
     # Kreiranje kopije originalne matrice troškova i vektora ponude i potražnje
     original_costs = costs.copy()
     supply = supply.copy()
