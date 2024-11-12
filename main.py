@@ -60,12 +60,13 @@ def calculate_u_v(solution, costs):
                         u[i] = costs[i][j] - v[j]
     return u, v
 
+
 def find_entering_variable(solution, costs, u, v):
     """
     Pronalazi promenljivu koja ulazi u bazu na osnovu modifikovanih troškova.
     """
     rows, cols = solution.shape
-    delta = np.zeros((rows, cols))
+    delta = np.full((rows, cols), float('inf'))
 
     for i in range(rows):
         for j in range(cols):
@@ -80,6 +81,8 @@ def find_entering_variable(solution, costs, u, v):
     enter_i, enter_j = np.unravel_index(np.argmin(delta), delta.shape)
     return enter_i, enter_j
 
+
+
 def find_cycle(solution, start):
     """
     Pronalazi ciklus koji uključuje poziciju `start` koristeći iterativni pristup (BFS).
@@ -93,7 +96,6 @@ def find_cycle(solution, start):
         x, y = current
         visited.add((x, y))
 
-        # Definišemo susede (pravolinijske pomake)
         neighbors = []
         for i in range(rows):
             if solution[i][y] > 0 or (i, y) == start:
@@ -102,7 +104,6 @@ def find_cycle(solution, start):
             if solution[x][j] > 0 or (x, j) == start:
                 neighbors.append((x, j))
 
-        # Prolazimo kroz susede
         for neighbor in neighbors:
             if neighbor in visited:
                 continue
@@ -111,7 +112,8 @@ def find_cycle(solution, start):
             elif neighbor not in path:
                 queue.append((neighbor, path + [neighbor]))
 
-    return None
+    return []  # Nije pronađen ciklus
+
 
 def adjust_solution(solution, cycle, entering_value):
     min_val = min(solution[x][y] for x, y in cycle[1::2])
@@ -146,6 +148,8 @@ def transportation_algorithm(supply, demand, costs):
 
     max_iterations = 1000
     iterations = 0
+    max_degeneracy_adds = 10
+    degeneracy_add_count = 0
 
     while True:
         iterations += 1
@@ -163,26 +167,32 @@ def transportation_algorithm(supply, demand, costs):
         # Nakon optimizacije petlje, ažuriraj rešenje sa novim vrednostima
         # Pronađi ciklus za MODI metodu
         cycle = find_cycle(solution, (enter_i, enter_j))
-        if option_add:
-            if cycle is None:
-                print("Dodavanje degenerisanih promenljivih zbog manjka baznih promenljivih.")
-                solution = check_degeneracy(solution, supply, demand)
-                continue
-        else:
-            if cycle is None:
-                print("Greška: Nije pronađen ciklus!")
-                break
+
+        # Dodavanje degenerisanih promenljivih ako nije pronađen ciklus
+        if not cycle:
+            if degeneracy_add_count >= max_degeneracy_adds:
+                raise RuntimeError("Prekoračen broj dodavanja degenerisanih promenljivih, možda nema validnog rešenja.")
+            degeneracy_add_count += 1
+            solution = check_degeneracy(solution, supply, demand)
+            continue
+
+        # Resetuj brojač degeneracije kad pronađe validan ciklus
+        degeneracy_add_count = 0
+
         adjust_solution(solution, cycle, entering_value=1e-5)
 
 
     return solution
 
 # Primer podataka
-supply = [20, 30, 25]  # Kapaciteti dobavljača
-demand = [10, 25, 20, 20]  # Potražnje potrošača
-costs = np.array([[8, 6, 10, 9],  # Troškovi transporta
-                  [9, 12, 13, 7],
-                  [14, 9, 16, 5]])
+supply = [20, 30, 20, 10]  # Kapaciteti dobavljača
+demand = [10, 40, 30]  # Potražnje potrošača
+costs = np.array([
+    [10, 12, 0],
+    [8, 4, 3],
+    [6, 9, 4],
+    [7, 8, 5]
+])
 
 solution = transportation_algorithm(supply, demand, costs)
 print("Optimalno rešenje:\n", solution)
